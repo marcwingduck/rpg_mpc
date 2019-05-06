@@ -24,7 +24,6 @@
 #pragma once
 
 #include <Eigen/Eigen>
-#include <ros/ros.h>
 
 namespace rpg_mpc
 {
@@ -39,9 +38,6 @@ static constexpr int kEndRefSize = ACADO_NYN;         // number of end reference
 static constexpr int kInputSize = ACADO_NU;           // number of inputs
 static constexpr int kCostSize = ACADO_NY - ACADO_NU; // number of state costs
 static constexpr int kOdSize = ACADO_NOD;             // number of online data
-
-ACADOvariables acadoVariables;
-ACADOworkspace acadoWorkspace;
 
 template <typename T>
 class MpcWrapper
@@ -61,31 +57,40 @@ public:
 
     bool setLimits(T min_thrust, T max_thrust,
                    T max_rollpitchrate, T max_yawrate);
+
     bool setCameraParameters(
         const Eigen::Ref<const Eigen::Matrix<T, 3, 1>> &p_B_C,
         Eigen::Quaternion<T> &q_B_C);
+
     bool setPointOfInterest(
         const Eigen::Ref<const Eigen::Matrix<T, 3, 1>> &position);
 
     bool setReferencePose(
         const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state);
+
     bool setTrajectory(
         const Eigen::Ref<const Eigen::Matrix<T, kStateSize, kSamples + 1>> states,
         const Eigen::Ref<const Eigen::Matrix<T, kInputSize, kSamples + 1>> inputs);
 
     bool solve(const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state);
+
     bool update(const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state,
                 bool do_preparation = true);
+
     bool prepare();
 
     void getState(const int node_index,
                   Eigen::Ref<Eigen::Matrix<T, kStateSize, 1>> return_state);
+
     void getStates(
         Eigen::Ref<Eigen::Matrix<T, kStateSize, kSamples + 1>> return_states);
+
     void getInput(const int node_index,
                   Eigen::Ref<Eigen::Matrix<T, kInputSize, 1>> return_input);
+
     void getInputs(
         Eigen::Ref<Eigen::Matrix<T, kInputSize, kSamples>> return_input);
+
     T getTimestep() { return dt_; }
 
 private:

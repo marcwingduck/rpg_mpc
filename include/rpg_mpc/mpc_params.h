@@ -23,10 +23,8 @@
 
 #pragma once
 
-#include <ros/ros.h>
 #include <rpg_mpc/mpc_wrapper.h>
-
-#include "quadrotor_common/parameter_helper.h"
+#include "config/mpcconfig.h"
 
 namespace rpg_mpc
 {
@@ -56,23 +54,14 @@ public:
     {
     }
 
-    bool loadParameters(ros::NodeHandle &pnh)
+    bool loadParameters(MpcConfig &config)
     {
-#define GET_PARAM(name)                                \
-    if (!quadrotor_common::getParam(#name, name, pnh)) \
-    return false
-
-#define GET_PARAM_(name)                                  \
-    if (!quadrotor_common::getParam(#name, name##_, pnh)) \
-    return false
-
         // Read state costs.
-        T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perception;
-        GET_PARAM(Q_pos_xy);
-        GET_PARAM(Q_pos_z);
-        GET_PARAM(Q_attitude);
-        GET_PARAM(Q_velocity);
-        quadrotor_common::getParam("Q_perception", Q_perception, (T)0.0, pnh);
+        T Q_pos_xy = (T)config.Q_pos_xy;
+        T Q_pos_z = (T)config.Q_pos_z;
+        T Q_attitude = (T)config.Q_attitude;
+        T Q_velocity = (T)config.Q_velocity;
+        T Q_perception = (T)config.Q_perception;
 
         // Check whether all state costs are positive.
         if (Q_pos_xy <= 0.0 ||
@@ -81,22 +70,21 @@ public:
             Q_velocity <= 0.0 ||
             Q_perception < 0.0) // Perception cost can be zero to deactivate.
         {
-            ROS_ERROR("MPC: State cost Q has negative enries!");
+            std::cerr << "MPC: State cost Q has negative enries!\n";
             return false;
         }
 
         // Read input costs.
-        T R_thrust, R_pitchroll, R_yaw;
-        GET_PARAM(R_thrust);
-        GET_PARAM(R_pitchroll);
-        GET_PARAM(R_yaw);
+        T R_thrust = (T)config.R_thrust;
+        T R_pitchroll = (T)config.R_pitchroll;
+        T R_yaw = (T)config.R_yaw;
 
         // Check whether all input costs are positive.
         if (R_thrust <= 0.0 ||
             R_pitchroll <= 0.0 ||
             R_yaw <= 0.0)
         {
-            ROS_ERROR("MPC: Input cost R has negative enries!");
+            std::cerr << "MPC: Input cost R has negative enries!\n";
             return false;
         }
 
@@ -110,16 +98,14 @@ public:
         R_ = (Eigen::Matrix<T, kInputSize, 1>() << R_thrust, R_pitchroll, R_pitchroll, R_yaw).finished().asDiagonal();
 
         // Read cost scaling values
-        quadrotor_common::getParam("state_cost_exponential",
-                                   state_cost_exponential_, (T)0.0, pnh);
-        quadrotor_common::getParam("input_cost_exponential",
-                                   input_cost_exponential_, (T)0.0, pnh);
+        state_cost_exponential_ = (T)config.state_cost_exponential;
+        input_cost_exponential_ = (T)config.input_cost_exponential;
 
         // Read input limits.
-        GET_PARAM_(max_bodyrate_xy);
-        GET_PARAM_(max_bodyrate_z);
-        GET_PARAM_(min_thrust);
-        GET_PARAM_(max_thrust);
+        max_bodyrate_xy_ = (T)config.max_bodyrate_xy;
+        max_bodyrate_z_ = (T)config.max_bodyrate_z;
+        min_thrust_ = (T)config.min_thrust;
+        max_thrust_ = (T)config.max_thrust;
 
         // Check whether all input limits are positive.
         if (max_bodyrate_xy_ <= 0.0 ||
@@ -127,39 +113,20 @@ public:
             min_thrust_ <= 0.0 ||
             max_thrust_ <= 0.0)
         {
-            ROS_ERROR("MPC: All limits must be positive non-zero values!");
+            std::cerr << "MPC: All limits must be positive non-zero values!\n";
             return false;
         }
 
         // Optional parameters
         std::vector<T> p_B_C(3), q_B_C(4);
-        if (!pnh.getParam("p_B_C", p_B_C))
-        {
-            ROS_WARN("MPC: Camera extrinsic translation is not set.");
-        }
-        else
-        {
-            p_B_C_ = Eigen::Matrix<T, 3, 1>(p_B_C[0], p_B_C[1], p_B_C[2]);
-        }
-        if (!pnh.getParam("q_B_C", q_B_C))
-        {
-            ROS_WARN("MPC: Camera extrinsic rotation is not set.");
-        }
-        else
-        {
-            q_B_C_ = Eigen::Quaternion<T>(q_B_C[0], q_B_C[1], q_B_C[2], q_B_C[3]);
-        }
+        p_B_C_ = config.p_B_C.cast<T>();
+        q_B_C_ = config.q_B_C.cast<T>();
 
-        quadrotor_common::getParam("print_info", print_info_, false, pnh);
+        print_info_ = config.print_info;
         if (print_info_)
-            ROS_INFO("MPC: Informative printing enabled.");
+            std::cout << "MPC: Informative printing enabled.\n";
 
         changed_ = true;
-
-#undef GET_PARAM
-#undef GET_PARAM_OPT
-#undef GET_PARAM_
-#undef GET_PARAM_OPT_
 
         return true;
     }

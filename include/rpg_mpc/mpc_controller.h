@@ -26,16 +26,10 @@
 #include <thread>
 
 #include <Eigen/Eigen>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/PointStamped.h>
-#include <nav_msgs/Path.h>
-#include <quadrotor_common/control_command.h>
-#include <quadrotor_common/quad_state_estimate.h>
-#include <quadrotor_common/trajectory.h>
-#include <quadrotor_common/trajectory_point.h>
-#include <ros/ros.h>
-#include <std_msgs/Bool.h>
-#include <trajectory_msgs/MultiDOFJointTrajectory.h>
+#include <core/controlinput.h>
+#include <core/checkpoint.h>
+#include <core/copterstate.h>
+#include <timing/clock.h>
 
 #include "rpg_mpc/mpc_wrapper.h"
 #include "rpg_mpc/mpc_params.h"
@@ -76,48 +70,46 @@ public:
     static_assert(kInputSize == 4,
                   "MpcController: Wrong model size. Number of inputs does not match.");
 
-    MpcController(const ros::NodeHandle &nh, const ros::NodeHandle &pnh);
-    MpcController() : MpcController(ros::NodeHandle(), ros::NodeHandle("~")) {}
+    MpcController(MpcConfig &config);
 
-    quadrotor_common::ControlCommand off();
+    ~MpcController();
 
-    quadrotor_common::ControlCommand run(
-        const quadrotor_common::QuadStateEstimate &state_estimate,
-        const quadrotor_common::Trajectory &reference_trajectory,
-        const MpcParams<T> &params);
+    ControlInput run(
+        const CopterState &state_estimate,
+        const std::list<Checkpoint> &reference_trajectory);
 
 private:
     // Internal helper functions.
 
     void pointOfInterestCallback(
-        const geometry_msgs::PointStamped::ConstPtr &msg);
+        const Eigen::Vector3d &point);
 
     bool setStateEstimate(
-        const quadrotor_common::QuadStateEstimate &state_estimate);
+        const CopterState &state_estimate);
 
-    bool setReference(const quadrotor_common::Trajectory &reference_trajectory);
+    bool setReference(const std::list<Checkpoint> &reference_trajectory);
 
-    quadrotor_common::ControlCommand updateControlCommand(
+    ControlInput updateControlCommand(
         const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state,
         const Eigen::Ref<const Eigen::Matrix<T, kInputSize, 1>> input,
-        ros::Time &time);
+        double &time);
 
     bool publishPrediction(
         const Eigen::Ref<const Eigen::Matrix<T, kStateSize, kSamples + 1>> states,
         const Eigen::Ref<const Eigen::Matrix<T, kInputSize, kSamples>> inputs,
-        ros::Time &time);
+        double &time);
 
     void preparationThread();
 
     bool setNewParams(MpcParams<T> &params);
 
     // Handles
-    ros::NodeHandle nh_;
-    ros::NodeHandle pnh_;
+    //ros::NodeHandle nh_;
+    //ros::NodeHandle pnh_;
 
     // Subscribers and publisher.
-    ros::Subscriber sub_point_of_interest_;
-    ros::Publisher pub_predicted_trajectory_;
+    //ros::Subscriber sub_point_of_interest_;
+    //ros::Publisher pub_predicted_trajectory_;
 
     // Parameters
     MpcParams<T> params_;

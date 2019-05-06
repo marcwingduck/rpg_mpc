@@ -22,9 +22,13 @@
  */
 
 #include "rpg_mpc/mpc_wrapper.h"
+#include <iostream>
 
 namespace rpg_mpc
 {
+
+ACADOvariables acadoVariables;
+ACADOworkspace acadoWorkspace;
 
 // Default Constructor.
 template <typename T>
@@ -107,7 +111,7 @@ bool MpcWrapper<T>::setCosts(
 {
     if (state_cost_scaling < 0.0 || input_cost_scaling < 0.0)
     {
-        ROS_ERROR("MPC: Cost scaling is wrong, must be non-negative!");
+        std::cerr << "MPC: Cost scaling is wrong, must be non-negative!\n";
         return false;
     }
     W_.block(0, 0, kCostSize, kCostSize) = Q;
@@ -137,25 +141,25 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
 {
     if (min_thrust <= 0.0 || min_thrust > max_thrust)
     {
-        ROS_ERROR("MPC: Minimal thrust is not set properly, not changed.");
+        std::cerr << "MPC: Minimal thrust is not set properly, not changed.\n";
         return false;
     }
 
     if (max_thrust <= 0.0 || min_thrust > max_thrust)
     {
-        ROS_ERROR("MPC: Maximal thrust is not set properly, not changed.");
+        std::cerr << "MPC: Maximal thrust is not set properly, not changed.\n";
         return false;
     }
 
     if (max_rollpitchrate <= 0.0)
     {
-        ROS_ERROR("MPC: Maximal xy-rate is not set properly, not changed.");
+        std::cerr << "MPC: Maximal xy-rate is not set properly, not changed.\n";
         return false;
     }
 
     if (max_yawrate <= 0.0)
     {
-        ROS_ERROR("MPC: Maximal yaw-rate is not set properly, not changed.");
+        std::cerr << "MPC: Maximal yaw-rate is not set properly, not changed.\n";
         return false;
     }
 
@@ -269,7 +273,7 @@ bool MpcWrapper<T>::update(
 {
     if (!acado_is_prepared_)
     {
-        ROS_WARN("MPC: Solver was triggered without preparation, abort!");
+        std::cerr << "MPC: Solver was triggered without preparation, abort!\n";
         return false;
     }
 
@@ -311,7 +315,7 @@ template <typename T>
 void MpcWrapper<T>::getState(const int node_index,
                              Eigen::Ref<Eigen::Matrix<T, kStateSize, 1>> return_state)
 {
-    return_state = acado_states_.col(node_index).cast<T>();
+    return_state = acado_states_.col(node_index).template cast<T>();
 }
 
 // Get all states.
@@ -319,7 +323,7 @@ template <typename T>
 void MpcWrapper<T>::getStates(
     Eigen::Ref<Eigen::Matrix<T, kStateSize, kSamples + 1>> return_states)
 {
-    return_states = acado_states_.cast<T>();
+    return_states = acado_states_.template cast<T>();
 }
 
 // Get a specific input.
@@ -327,7 +331,7 @@ template <typename T>
 void MpcWrapper<T>::getInput(const int node_index,
                              Eigen::Ref<Eigen::Matrix<T, kInputSize, 1>> return_input)
 {
-    return_input = acado_inputs_.col(node_index).cast<T>();
+    return_input = acado_inputs_.col(node_index).template cast<T>();
 }
 
 // Get all inputs.
@@ -335,7 +339,7 @@ template <typename T>
 void MpcWrapper<T>::getInputs(
     Eigen::Ref<Eigen::Matrix<T, kInputSize, kSamples>> return_inputs)
 {
-    return_inputs = acado_inputs_.cast<T>();
+    return_inputs = acado_inputs_.template cast<T>();
 }
 
 template class MpcWrapper<float>;
