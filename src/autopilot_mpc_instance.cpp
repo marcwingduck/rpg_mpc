@@ -21,24 +21,24 @@
  *
  */
 
-
 #include <rpg_mpc/mpc_controller.h>
 #include <rpg_mpc/mpc_params.h>
 
 #include "autopilot/autopilot.h"
 
 template class autopilot::AutoPilot<rpg_mpc::MpcController<float>,
-                         rpg_mpc::MpcParams<float>>;
+                                    rpg_mpc::MpcParams<float>>;
 template class autopilot::AutoPilot<rpg_mpc::MpcController<double>,
-                         rpg_mpc::MpcParams<double>>;
+                                    rpg_mpc::MpcParams<double>>;
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "autopilot");
-  autopilot::AutoPilot<rpg_mpc::MpcController<float>,
-                       rpg_mpc::MpcParams<float>> autopilot;
+    ros::init(argc, argv, "autopilot");
+    autopilot::AutoPilot<rpg_mpc::MpcController<float>,
+                         rpg_mpc::MpcParams<float>>
+        autopilot;
 
-  ros::spin();
+    ros::spin();
 
-  return 0;
+    return 0;
 }

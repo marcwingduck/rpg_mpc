@@ -21,17 +21,16 @@
  *
  */
 
-
 #include "ros/ros.h"
 #include "ros/console.h"
 #include "rpg_mpc/mpc_controller.h"
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "rpg_mpc");
-  rpg_mpc::MpcController<float>
-    controller(ros::NodeHandle(), ros::NodeHandle("~"));
-  ros::spin();
+    ros::init(argc, argv, "rpg_mpc");
+    rpg_mpc::MpcController<float>
+        controller(ros::NodeHandle(), ros::NodeHandle("~"));
+    ros::spin();
 
-  return 0;
+    return 0;
 }
