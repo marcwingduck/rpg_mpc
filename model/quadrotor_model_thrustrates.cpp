@@ -35,16 +35,16 @@ int main()
     USING_NAMESPACE_ACADO
 
     /*
-  Switch between code generation and analysis.
+    Switch between code generation and analysis.
 
-  If CODE_GEN is true the system is compiled into an optimizaiton problem
-  for real-time iteration and all code to run it online is generated.
-  Constraints and reference structure is used but the values will be set on
-  runtinme.
+    If CODE_GEN is true the system is compiled into an optimizaiton problem
+    for real-time iteration and all code to run it online is generated.
+    Constraints and reference structure is used but the values will be set on
+    runtinme.
 
-  If CODE_GEN is false, the system is compiled into a standalone optimization
-  and solved on execution. The reference and constraints must be set in here.
-  */
+    If CODE_GEN is false, the system is compiled into a standalone optimization
+    and solved on execution. The reference and constraints must be set in here.
+    */
     const bool CODE_GEN = true;
 
     // System variables
@@ -64,10 +64,10 @@ int main()
     const double dt = 0.1;           // Discretization time [s]
     const int N = round(t_end / dt); // Number of nodes
     const double g_z = 9.80665;      // Gravity is everywhere [m/s^2]
-    const double w_max_yaw = 1;      // Maximal yaw rate [rad/s]
+    const double w_max_yaw = 2;      // Maximal yaw rate [rad/s]
     const double w_max_xy = 3;       // Maximal pitch and roll rate [rad/s]
-    const double T_min = 2.;         // Minimal thrust [N] todo hummingbird
-    const double T_max = 20.;        // Maximal thrust [N] todo hummingbird
+    const double T_min = 00.01;      // Minimal thrust [N]
+    const double T_max = 17.63;      // Maximal thrust [N]
 
     // Bias to prevent division by zero.
     const double epsilon = 0.1; // Camera projection recover bias [m]
@@ -248,7 +248,9 @@ int main()
 
         // Finally, export everything.
         if (mpc.exportCode("quadrotor_mpc_codegen") != SUCCESSFUL_RETURN)
+        {
             exit(EXIT_FAILURE);
+        }
         mpc.printDimensionsQP();
     }
 
