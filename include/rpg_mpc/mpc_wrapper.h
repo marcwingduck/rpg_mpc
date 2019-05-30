@@ -37,7 +37,6 @@ static constexpr int kRefSize = ACADO_NY;             // number of reference sta
 static constexpr int kEndRefSize = ACADO_NYN;         // number of end reference states
 static constexpr int kInputSize = ACADO_NU;           // number of inputs
 static constexpr int kCostSize = ACADO_NY - ACADO_NU; // number of state costs
-static constexpr int kOdSize = ACADO_NOD;             // number of online data
 
 template <typename T>
 class MpcWrapper
@@ -57,13 +56,6 @@ public:
 
     bool setLimits(T min_thrust, T max_thrust,
                    T max_rollpitchrate, T max_yawrate);
-
-    bool setCameraParameters(
-        const Eigen::Ref<const Eigen::Matrix<T, 3, 1>> &p_B_C,
-        Eigen::Quaternion<T> &q_B_C);
-
-    bool setPointOfInterest(
-        const Eigen::Ref<const Eigen::Matrix<T, 3, 1>> &position);
 
     bool setReferencePose(
         const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state);
@@ -109,9 +101,6 @@ private:
     Eigen::Map<Eigen::Matrix<float, kInputSize, kSamples, Eigen::ColMajor>>
         acado_inputs_{acadoVariables.u};
 
-    Eigen::Map<Eigen::Matrix<float, kOdSize, kSamples + 1, Eigen::ColMajor>>
-        acado_online_data_{acadoVariables.od};
-
     Eigen::Map<Eigen::Matrix<float, kRefSize, kRefSize * kSamples>>
         acado_W_{acadoVariables.W};
 
@@ -127,7 +116,6 @@ private:
     Eigen::Matrix<T, kRefSize, kRefSize> W_ = (Eigen::Matrix<T, kRefSize, 1>() << 10 * Eigen::Matrix<T, 3, 1>::Ones(),
                                                100 * Eigen::Matrix<T, 4, 1>::Ones(),
                                                10 * Eigen::Matrix<T, 3, 1>::Ones(),
-                                               Eigen::Matrix<T, 2, 1>::Zero(),
                                                1, 10, 10, 1)
                                                   .finished()
                                                   .asDiagonal();

@@ -60,16 +60,6 @@ MpcController<T>::~MpcController()
 }
 
 template <typename T>
-void MpcController<T>::pointOfInterestCallback(
-    const Eigen::Vector3d &point)
-{
-    point_of_interest_(0) = point.x();
-    point_of_interest_(1) = point.y();
-    point_of_interest_(2) = point.z();
-    mpc_wrapper_.setPointOfInterest(point_of_interest_);
-}
-
-template <typename T>
 ControlInput MpcController<T>::run(
     const CopterState &state_estimate,
     const std::list<Checkpoint> &reference_trajectory)
@@ -110,8 +100,6 @@ ControlInput MpcController<T>::run(
     {
         std::cout << "MPC Timing: Latency: " << timing_feedback_ * 1000 << " ms  |  Total: " << (timing_feedback_ + timing_preparation_) * 1000 << " ms";
     }
-
-    //std::cout << predicted_inputs_.col(0) << "\n";
 
     // Return the input control command.
     return updateControlCommand(predicted_states_.col(0),
@@ -281,7 +269,6 @@ bool MpcController<T>::setNewParams(MpcParams<T> &params)
     mpc_wrapper_.setLimits(
         params.min_thrust_, params.max_thrust_,
         params.max_bodyrate_xy_, params.max_bodyrate_z_);
-    mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
     params.changed_ = false;
     return true;
 }

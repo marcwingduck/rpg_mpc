@@ -81,9 +81,6 @@ public:
 private:
     // Internal helper functions.
 
-    void pointOfInterestCallback(
-        const Eigen::Vector3d &point);
-
     bool setStateEstimate(
         const CopterState &state_estimate);
 
@@ -102,14 +99,6 @@ private:
     void preparationThread();
 
     bool setNewParams(MpcParams<T> &params);
-
-    // Handles
-    //ros::NodeHandle nh_;
-    //ros::NodeHandle pnh_;
-
-    // Subscribers and publisher.
-    //ros::Subscriber sub_point_of_interest_;
-    //ros::Publisher pub_predicted_trajectory_;
 
     // Parameters
     MpcParams<T> params_;

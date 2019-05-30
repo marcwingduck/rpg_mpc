@@ -78,14 +78,6 @@ MpcWrapper<T>::MpcWrapper()
         acado_W_end_ = WN_.template cast<float>();
     }
 
-    // Initialize online data.
-    Eigen::Matrix<T, 3, 1> p_B_C(0, 0, 0);
-    Eigen::Quaternion<T> q_B_C(1, 0, 0, 0);
-    Eigen::Matrix<T, 3, 1> point_of_interest(0, 0, -1000);
-
-    setCameraParameters(p_B_C, q_B_C);
-    setPointOfInterest(point_of_interest);
-
     // Initialize solver.
     acado_initializeNodesByForwardSimulation();
     acado_preparationStep();
@@ -176,30 +168,6 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
 
     acado_upper_bounds_ =
         upper_bounds.replicate(1, kSamples).template cast<float>();
-    return true;
-}
-
-// Set camera extrinsics.
-template <typename T>
-bool MpcWrapper<T>::setCameraParameters(
-    const Eigen::Ref<const Eigen::Matrix<T, 3, 1>> &p_B_C,
-    Eigen::Quaternion<T> &q_B_C)
-{
-    acado_online_data_.block(3, 0, 3, ACADO_N + 1) = p_B_C.replicate(1, ACADO_N + 1).template cast<float>();
-
-    Eigen::Matrix<T, 4, 1> q_B_C_mat(
-        q_B_C.w(), q_B_C.x(), q_B_C.y(), q_B_C.z());
-    acado_online_data_.block(6, 0, 4, ACADO_N + 1) = q_B_C_mat.replicate(1, ACADO_N + 1).template cast<float>();
-
-    return true;
-}
-
-// Set the point of interest. Perception cost should be non-zero.
-template <typename T>
-bool MpcWrapper<T>::setPointOfInterest(
-    const Eigen::Ref<const Eigen::Matrix<T, 3, 1>> &position)
-{
-    acado_online_data_.block(0, 0, 3, ACADO_N + 1) = position.replicate(1, ACADO_N + 1).template cast<float>();
     return true;
 }
 

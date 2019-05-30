@@ -43,8 +43,6 @@ public:
                   max_bodyrate_z_(0.0),
                   min_thrust_(0.0),
                   max_thrust_(0.0),
-                  p_B_C_(Eigen::Matrix<T, 3, 1>::Zero()),
-                  q_B_C_(Eigen::Quaternion<T>(1.0, 0.0, 0.0, 0.0)),
                   Q_(Eigen::Matrix<T, kCostSize, kCostSize>::Zero()),
                   R_(Eigen::Matrix<T, kInputSize, kInputSize>::Zero())
     {
@@ -91,8 +89,7 @@ public:
         // Set state and input cost matrices.
         Q_ = (Eigen::Matrix<T, kCostSize, 1>() << Q_pos_xy, Q_pos_xy, Q_pos_z,
               Q_attitude, Q_attitude, Q_attitude, Q_attitude,
-              Q_velocity, Q_velocity, Q_velocity,
-              Q_perception, Q_perception)
+              Q_velocity, Q_velocity, Q_velocity)
                  .finished()
                  .asDiagonal();
         R_ = (Eigen::Matrix<T, kInputSize, 1>() << R_thrust, R_pitchroll, R_pitchroll, R_yaw).finished().asDiagonal();
@@ -117,11 +114,6 @@ public:
             return false;
         }
 
-        // Optional parameters
-        std::vector<T> p_B_C(3), q_B_C(4);
-        p_B_C_ = config.p_B_C.cast<T>();
-        q_B_C_ = config.q_B_C.cast<T>();
-
         print_info_ = config.print_info;
         if (print_info_)
             std::cout << "MPC: Informative printing enabled.\n";
@@ -142,9 +134,6 @@ public:
     T max_bodyrate_z_;
     T min_thrust_;
     T max_thrust_;
-
-    Eigen::Matrix<T, 3, 1> p_B_C_;
-    Eigen::Quaternion<T> q_B_C_;
 
     Eigen::Matrix<T, kCostSize, kCostSize> Q_;
     Eigen::Matrix<T, kInputSize, kInputSize> R_;
