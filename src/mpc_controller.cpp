@@ -31,20 +31,18 @@ namespace rpg_mpc
 {
 
 template <typename T>
-MpcController<T>::MpcController(MpcConfig &config) : mpc_wrapper_(MpcWrapper<T>()),
-                                                     timing_feedback_(T(1e-3)),
-                                                     timing_preparation_(T(1e-3)),
-                                                     est_state_((Eigen::Matrix<T, kStateSize, 1>() << 0, 0, 0, 1, 0, 0, 0, 0, 0, 0).finished()),
-                                                     reference_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
-                                                     reference_inputs_(Eigen::Matrix<T, kInputSize, kSamples + 1>::Zero()),
-                                                     predicted_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
-                                                     predicted_inputs_(Eigen::Matrix<T, kInputSize, kSamples>::Zero()),
-                                                     point_of_interest_(Eigen::Matrix<T, 3, 1>::Zero())
+MpcController<T>::MpcController(MpcParams<T> &params)
+    : params_(params),
+      mpc_wrapper_(MpcWrapper<T>()),
+      timing_feedback_(T(1e-3)),
+      timing_preparation_(T(1e-3)),
+      est_state_((Eigen::Matrix<T, kStateSize, 1>() << 0, 0, 0, 1, 0, 0, 0, 0, 0, 0).finished()),
+      reference_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
+      reference_inputs_(Eigen::Matrix<T, kInputSize, kSamples + 1>::Zero()),
+      predicted_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
+      predicted_inputs_(Eigen::Matrix<T, kInputSize, kSamples>::Zero()),
+      point_of_interest_(Eigen::Matrix<T, 3, 1>::Zero())
 {
-    if (!params_.loadParameters(config))
-    {
-        throw std::runtime_error("Could not load parameters.");
-    }
     setNewParams(params_);
 
     preparation_thread_ = std::thread(&MpcWrapper<T>::prepare, mpc_wrapper_);
@@ -62,16 +60,17 @@ MpcController<T>::~MpcController()
 template <typename T>
 ControlInput MpcController<T>::run(
     const CopterState &state_estimate,
-    const std::list<Checkpoint> &reference_trajectory)
+    const std::list<Checkpoint> &reference_trajectory,
+    const MpcParams<T> &params)
 {
     double call_time = Clock::nowSeconds();
     const clock_t start = clock();
 
-    /*if(params.changed_)
+    if (params.changed_)
     {
         params_ = params;
         setNewParams(params_);
-    }*/
+    }
 
     preparation_thread_.join();
 

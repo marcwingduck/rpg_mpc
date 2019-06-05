@@ -52,7 +52,7 @@ public:
     {
     }
 
-    bool loadParameters(MpcConfig &config)
+    bool loadParameters(MPCConfig &config)
     {
         // Read state costs.
         T Q_pos_xy = (T)config.Q_pos_xy;
@@ -68,7 +68,7 @@ public:
             Q_velocity <= 0.0 ||
             Q_perception < 0.0) // Perception cost can be zero to deactivate.
         {
-            std::cerr << "MPC: State cost Q has negative enries!\n";
+            std::cerr << "MPC: State cost Q has negative entries!\n";
             return false;
         }
 

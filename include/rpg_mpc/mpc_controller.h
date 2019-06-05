@@ -70,13 +70,14 @@ public:
     static_assert(kInputSize == 4,
                   "MpcController: Wrong model size. Number of inputs does not match.");
 
-    MpcController(MpcConfig &config);
+    MpcController(MpcParams<T> &params);
 
     ~MpcController();
 
     ControlInput run(
         const CopterState &state_estimate,
-        const std::list<Checkpoint> &reference_trajectory);
+        const std::list<Checkpoint> &reference_trajectory,
+        const MpcParams<T>& params);
 
 private:
     // Internal helper functions.
