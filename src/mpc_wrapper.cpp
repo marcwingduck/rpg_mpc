@@ -300,7 +300,7 @@ bool MpcWrapper<T>::update(
 }
 
 // Prepare the solver.
-// Must be triggered between iterations if not done in the update funciton.
+// Must be triggered between iterations if not done in the update function.
 template <typename T>
 bool MpcWrapper<T>::prepare()
 {

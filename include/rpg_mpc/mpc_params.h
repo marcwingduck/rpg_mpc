@@ -54,7 +54,7 @@ public:
     {
     }
 
-    bool loadParameters(MpcConfig &config)
+    bool loadParameters(MPCConfig &config)
     {
         // Read state costs.
         T Q_pos_xy = (T)config.Q_pos_xy;

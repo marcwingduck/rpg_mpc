@@ -26,6 +26,7 @@
 #include <thread>
 
 #include <Eigen/Eigen>
+
 #include <core/controlinput.h>
 #include <core/checkpoint.h>
 #include <core/copterstate.h>
@@ -70,13 +71,14 @@ public:
     static_assert(kInputSize == 4,
                   "MpcController: Wrong model size. Number of inputs does not match.");
 
-    MpcController(MpcConfig &config);
+    MpcController(MpcParams<T> &params);
 
     ~MpcController();
 
     ControlInput run(
         const CopterState &state_estimate,
-        const std::list<Checkpoint> &reference_trajectory);
+        const std::list<Checkpoint> &reference_trajectory,
+        const MpcParams<T> &params);
 
 private:
     // Internal helper functions.
@@ -84,10 +86,13 @@ private:
     void pointOfInterestCallback(
         const Eigen::Vector3d &point);
 
+    void offCallback();
+
     bool setStateEstimate(
         const CopterState &state_estimate);
 
-    bool setReference(const std::list<Checkpoint> &reference_trajectory);
+    bool setReference(
+        const std::list<Checkpoint> &reference_trajectory);
 
     ControlInput updateControlCommand(
         const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state,
@@ -103,14 +108,6 @@ private:
 
     bool setNewParams(MpcParams<T> &params);
 
-    // Handles
-    //ros::NodeHandle nh_;
-    //ros::NodeHandle pnh_;
-
-    // Subscribers and publisher.
-    //ros::Subscriber sub_point_of_interest_;
-    //ros::Publisher pub_predicted_trajectory_;
-
     // Parameters
     MpcParams<T> params_;
 
@@ -122,6 +119,7 @@ private:
 
     // Variables
     T timing_feedback_, timing_preparation_;
+    bool solve_from_scratch_;
     Eigen::Matrix<T, kStateSize, 1> est_state_;
     Eigen::Matrix<T, kStateSize, kSamples + 1> reference_states_;
     Eigen::Matrix<T, kInputSize, kSamples + 1> reference_inputs_;
