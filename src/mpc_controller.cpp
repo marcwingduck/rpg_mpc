@@ -45,6 +45,7 @@ MpcController<T>::MpcController(MpcParams<T> &params)
 {
     setNewParams(params_);
 
+    solve_from_scratch_ = true;
     preparation_thread_ = std::thread(&MpcWrapper<T>::prepare, mpc_wrapper_);
 }
 
@@ -55,6 +56,12 @@ MpcController<T>::~MpcController()
     {
         preparation_thread_.join();
     }
+}
+
+template <typename T>
+void MpcController<T>::offCallback()
+{
+    solve_from_scratch_ = true;
 }
 
 template <typename T>
@@ -82,7 +89,16 @@ ControlInput MpcController<T>::run(
 
     // Get the feedback from MPC.
     mpc_wrapper_.setTrajectory(reference_states_, reference_inputs_);
-    mpc_wrapper_.update(est_state_, do_preparation_step);
+    if (solve_from_scratch_)
+    {
+        std::cout << "Solving MPC with hover as initial guess.\n";
+        mpc_wrapper_.solve(est_state_);
+        solve_from_scratch_ = false;
+    }
+    else
+    {
+        mpc_wrapper_.update(est_state_, do_preparation_step);
+    }
     mpc_wrapper_.getStates(predicted_states_);
     mpc_wrapper_.getInputs(predicted_inputs_);
 
@@ -133,15 +149,18 @@ bool MpcController<T>::setReference(
 
     const T dt = mpc_wrapper_.getTimestep();
     Eigen::Matrix<T, 3, 1> acceleration;
-    const Eigen::Matrix<T, 3, 1> gravity(0.0, 0.0, -9.81);
+    const Eigen::Matrix<T, 3, 1> gravity(0.0, 0.0, -9.80665);
     Eigen::Quaternion<T> q_heading;
     Eigen::Quaternion<T> q_orientation;
     bool quaternion_norm_ok(true);
     if (reference_trajectory.size() == 1)
     {
-        q_heading = Eigen::Quaternion<T>(Eigen::AngleAxis<T>(reference_trajectory.front().heading, Eigen::Matrix<T, 3, 1>::UnitZ()));
-        q_orientation = q_heading * reference_trajectory.front().attitude.template cast<T>();
-        reference_states_ = (Eigen::Matrix<T, kStateSize, 1>() << reference_trajectory.front().position.template cast<T>(),
+        q_heading = Eigen::Quaternion<T>(Eigen::AngleAxis<T>(
+            reference_trajectory.front().heading,
+            Eigen::Matrix<T, 3, 1>::UnitZ()));
+        q_orientation = reference_trajectory.front().attitude.template cast<T>() * q_heading;
+        reference_states_ = (Eigen::Matrix<T, kStateSize, 1>()
+                                 << reference_trajectory.front().position.template cast<T>(),
                              q_orientation.w(),
                              q_orientation.x(),
                              q_orientation.y(),
@@ -158,15 +177,21 @@ bool MpcController<T>::setReference(
     }
     else
     {
-        std::list<Checkpoint>::const_iterator iterator(reference_trajectory.begin());
+        auto iterator(reference_trajectory.begin());
+        double t_start = reference_trajectory.begin()->seconds;
+        auto last_element = reference_trajectory.end();
+        last_element = std::prev(last_element);
+
         for (int i = 0; i < kSamples + 1; i++)
         {
-            while (iterator->seconds < i * dt &&
-                   iterator != reference_trajectory.end())
+            while ((iterator->seconds - t_start) <= i * dt &&
+                   iterator != last_element)
             {
                 iterator++;
             }
-            q_heading = Eigen::Quaternion<T>(Eigen::AngleAxis<T>(iterator->heading, Eigen::Matrix<T, 3, 1>::UnitZ()));
+
+            q_heading = Eigen::Quaternion<T>(Eigen::AngleAxis<T>(
+                iterator->heading, Eigen::Matrix<T, 3, 1>::UnitZ()));
             q_orientation = q_heading * iterator->attitude.template cast<T>();
             reference_states_.col(i) << iterator->position.template cast<T>(),
                 q_orientation.w(),
@@ -174,12 +199,13 @@ bool MpcController<T>::setReference(
                 q_orientation.y(),
                 q_orientation.z(),
                 iterator->velocity.template cast<T>();
-            if (reference_states_.col(i).segment(kOriW, 4).dot(est_state_.segment(kOriW, 4)) < 0.0)
-            {
-                reference_states_.block(kOriW, i, 4, 1) = -reference_states_.block(kOriW, i, 4, 1);
-            }
+            if (reference_states_.col(i).segment(kOriW, 4).dot(
+                    est_state_.segment(kOriW, 4)) < 0.0)
+                reference_states_.block(kOriW, i, 4, 1) =
+                    -reference_states_.block(kOriW, i, 4, 1);
             acceleration << iterator->acceleration.template cast<T>() - gravity;
-            reference_inputs_.col(i) << acceleration.norm(), iterator->bodyrates.template cast<T>();
+            reference_inputs_.col(i) << acceleration.norm(),
+                iterator->bodyrates.template cast<T>();
             quaternion_norm_ok &= abs(est_state_.segment(kOriW, 4).norm() - 1.0) < 0.1;
         }
     }
@@ -195,12 +221,17 @@ ControlInput MpcController<T>::updateControlCommand(
     Eigen::Matrix<T, kInputSize, 1> input_bounded = input.template cast<T>();
 
     // Bound inputs for sanity.
-    input_bounded(INPUT::kThrust) = std::max(params_.min_thrust_, std::min(params_.max_thrust_, input_bounded(INPUT::kThrust)));
-    input_bounded(INPUT::kRateX) = std::max(-params_.max_bodyrate_xy_, std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateX)));
-    input_bounded(INPUT::kRateY) = std::max(-params_.max_bodyrate_xy_, std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateY)));
-    input_bounded(INPUT::kRateZ) = std::max(-params_.max_bodyrate_z_, std::min(params_.max_bodyrate_z_, input_bounded(INPUT::kRateZ)));
+    input_bounded(INPUT::kThrust) = std::max(params_.min_thrust_,
+                                             std::min(params_.max_thrust_, input_bounded(INPUT::kThrust)));
+    input_bounded(INPUT::kRateX) = std::max(-params_.max_bodyrate_xy_,
+                                            std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateX)));
+    input_bounded(INPUT::kRateY) = std::max(-params_.max_bodyrate_xy_,
+                                            std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateY)));
+    input_bounded(INPUT::kRateZ) = std::max(-params_.max_bodyrate_z_,
+                                            std::min(params_.max_bodyrate_z_, input_bounded(INPUT::kRateZ)));
 
     ControlInput command;
+
     command.armed = true;
     command.type = ControlInput::ControlInputType::TRPY;
     command.thrust = input_bounded(INPUT::kThrust);

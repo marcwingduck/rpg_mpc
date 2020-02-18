@@ -1,1 +1,7 @@
-model/build/*
+# CLion stuff
+.idea/
+cmake-build-debug/
+.vscode/
+build/
+model/build/
+
