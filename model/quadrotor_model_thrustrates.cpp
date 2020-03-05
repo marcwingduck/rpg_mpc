@@ -63,7 +63,7 @@ int main()
     const double g_z = 9.80665;      // Gravity is everywhere [m/s^2]
     const double w_max_yaw = 2;      // Maximal yaw rate [rad/s]
     const double w_max_xy = 3;       // Maximal pitch and roll rate [rad/s]
-    const double T_min = 2.00;       // Minimal thrust [N]
+    const double T_min = 1.00;       // Minimal thrust [N]
     const double T_max = 20.00;      // Maximal thrust [N]
 
     // System Dynamics
